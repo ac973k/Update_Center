@@ -1,6 +1,7 @@
 #include "updatecenter.h"
 
 #include <QFile>
+#include <QDir>
 
 #include <QtAndroidExtras/QtAndroid>
 #include <QtTest/QTest>
@@ -10,7 +11,8 @@ bool requestAndroidPermissions(){
 
 const QVector<QString> permissions({
                                     "android.permission.WRITE_EXTERNAL_STORAGE",
-                                    "android.permission.READ_EXTERNAL_STORAGE"});
+                                    "android.permission.READ_EXTERNAL_STORAGE,"
+                                    "android.permission.INTERNET"});
 
 for(const QString &permission : permissions){
     auto result = QtAndroid::checkPermission(permission);
@@ -33,15 +35,22 @@ UpdateCenter::UpdateCenter(QWidget *parent)
     Model = settingsFirmware->value("General/Model").toString();
     version = settingsFirmware->value("General/Version").toString();
     url = settingsFirmware->value("General/URL").toString();
+    path = settingsFirmware->value("General/Path").toString();
+
+    QDir dir(path);
+    if (!dir.exists())
+    {
+        dir.mkdir(path);
+    }
 
     managerSearch = new QNetworkAccessManager();
     managerDownload = new QNetworkAccessManager();
 
     mainLayout = new QGridLayout;
 
-    btnSearch = new QPushButton("Search");
-    btnDownload = new QPushButton("Download");
-    btnAbout = new QPushButton("About");
+    btnSearch = new QPushButton("Проверить");
+    btnDownload = new QPushButton("Загрузить");
+    btnAbout = new QPushButton("О Программе!");
 
     boxAbout = new QMessageBox;
 
@@ -58,8 +67,9 @@ UpdateCenter::UpdateCenter(QWidget *parent)
 
     textLog->setReadOnly(true);
 
-    textLog->append("Model: " + Model);
-    textLog->append("Current Version: " + version);
+    textLog->append("Модель: " + Model);
+    textLog->append("Текущая Версия: " + version);
+    textLog->append("Папка загрузки: " + path);
 
     QObject::connect(btnSearch, SIGNAL(clicked()), this, SLOT(Search()));
     QObject::connect(btnDownload, SIGNAL(clicked()), this, SLOT(Download()));
@@ -88,18 +98,25 @@ void UpdateCenter::Search()
 {
      QString site = url + "/update/" + version + "/version.ini";
 
-     QObject::connect(managerSearch, SIGNAL(finished(QNetworkReply *)), this, SLOT(onSearchResult(QNetworkReply*))); //отправляем данные и получаем ответ от вк успешно или ошибка
+     QObject::connect(managerSearch, SIGNAL(finished(QNetworkReply *)), this, SLOT(onSearchResult(QNetworkReply*))); //отправляем данные и получаем ответ успешно или ошибка
      managerSearch->get(QNetworkRequest(site));
 }
 
 void UpdateCenter::onSearchResult(QNetworkReply *replyS)
 {
-    QFile nFile("/sdcard/version.ini");
+
+    QFile nFile(path + "/version.ini");
 
     if(!replyS->error())
     {
         nFile.open(QFile::WriteOnly);
         nFile.write(replyS->readAll());
+    }
+    else
+    {
+        textLog->append(replyS->errorString());
+        replyS->abort();
+        replyS->deleteLater();
     }
 
     nFile.close();
@@ -110,7 +127,7 @@ void UpdateCenter::onSearchResult(QNetworkReply *replyS)
     QString newVersion;
     QString fullSize;
 
-    QSettings newSet("/sdcard/version.ini", QSettings::IniFormat);
+    QSettings newSet(path + "/version.ini", QSettings::IniFormat);
     fullSize = newSet.value("General/Size").toString();
 
     newVersion = newSet.value("General/Version").toString();
@@ -118,15 +135,15 @@ void UpdateCenter::onSearchResult(QNetworkReply *replyS)
     if (version.toInt() < newVersion.toInt())
     {
         textLog->clear();
-        textLog->append("Available new version!!! " + newVersion);
-        textLog->append("Size: " + fullSize);
+        textLog->append("Доступна новая версия!!! " + newVersion);
+        textLog->append("Размер: " + fullSize);
 
         btnDownload->setEnabled(true);
     }
     else if (version.toInt() == newVersion.toInt())
     {
         textLog->clear();
-        textLog->append("Update Not Found!");
+        textLog->append("Обновлений нет!");
     }
 }
 
@@ -136,13 +153,13 @@ void UpdateCenter::Download()
 
     QNetworkReply *reply;
 
-    QSettings newSet("/sdcard/version.ini", QSettings::IniFormat);
+    QSettings newSet(path + "/version.ini", QSettings::IniFormat);
 
     newVersion = newSet.value("General/Version").toString();
 
     QString site = url + "/update/" + newVersion + "/update.zip";
 
-    textLog->append("Start Download...");
+    textLog->append("Начало Загрузки...");
 
     reply = managerDownload->get(QNetworkRequest(site));
 
@@ -152,12 +169,18 @@ void UpdateCenter::Download()
 
 void UpdateCenter::onDownloadResult(QNetworkReply *replyD)
 {
-    QFile uFile("/sdcard/Update.zip");
+    QFile uFile(path + "/Update.zip");
 
     if(!replyD->error())
     {
         uFile.open(QFile::WriteOnly);
         uFile.write(replyD->readAll());
+    }
+    else
+    {
+        textLog->append(replyD->errorString());
+        replyD->abort();
+        replyD->deleteLater();
     }
 
     uFile.close();
@@ -165,8 +188,8 @@ void UpdateCenter::onDownloadResult(QNetworkReply *replyD)
     replyD->abort();
     replyD->deleteLater();
 
-    textLog->append("Download Completed!");
-    textLog->append("File: /sdcard/Update.zip");
+    textLog->append("Загрузка Завершена!");
+    textLog->append("Файл: " + path + "/Update.zip");
 }
 
 void UpdateCenter::About()
@@ -187,5 +210,5 @@ void UpdateCenter::About()
 void UpdateCenter::onProgress(qint64 receivedSize, qint64 totalSize)
 {
     textLog->clear();
-    textLog->append("Download: " + QString::number(receivedSize) + " / " + QString::number(totalSize));
+    textLog->append("Загружено: " + QString::number(receivedSize) + " / " + QString::number(totalSize));
 }
