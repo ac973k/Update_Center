@@ -54,7 +54,7 @@ Kernel::Kernel(QWidget *parent) : QWidget(parent)
     textLog->setReadOnly(true);
 
     textLog->append("=====Ядро=====");
-    textLog->append("Модель: " + Name);
+    textLog->append("Название: " + Name);
     textLog->append("Текущая Версия: " + version);
     textLog->append("Папка загрузки: " + path);
 
@@ -214,4 +214,25 @@ void Kernel::showRecovery()
 {
     Recovery *rec = new Recovery;
     rec->show();
+}
+
+void Kernel::onInstall()
+{
+    textLog->append("Делаем резервную копию ядра");
+
+    procBackup->setProcessChannelMode(QProcess::SeparateChannels);
+    procBackup->start("su", QStringList() << "-c" << "busybox" << "dd" << "if=" << boot << "of=" + path + "/boot_" + version + ".img");
+
+    textLog->append(procBackup->readAll());
+
+    textLog->append("Готово! Бэкап лежит в " + path);
+
+    textLog->append("Прошиваем...");
+
+    procInstall->setProcessChannelMode(QProcess::SeparateChannels);
+    procInstall->start("su", QStringList() << "-c" << "busybox" << "dd" << "if=" << path + "/boot.img" << "of=" + boot);
+
+    textLog->append(procInstall->readAll());
+
+    textLog->append("Готово!");
 }

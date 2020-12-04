@@ -106,7 +106,7 @@ UpdateCenter::~UpdateCenter()
 
 void UpdateCenter::Search()
 {
-     QString site = url + "/update/" + version + "/version.ini";
+     QString site = url + "/update/firmware/" + version + "/version.ini";
 
      QObject::connect(managerSearch, SIGNAL(finished(QNetworkReply *)), this, SLOT(onSearchResult(QNetworkReply*))); //отправляем данные и получаем ответ успешно или ошибка
      managerSearch->get(QNetworkRequest(site));
@@ -167,7 +167,7 @@ void UpdateCenter::Download()
 
     newVersion = newSet.value("General/newVersion").toString();
 
-    QString site = url + "/update/" + newVersion + "/update.zip";
+    QString site = url + "/update/firmware/" + newVersion + "/update.zip";
 
     textLog->append("Начало Загрузки...");
 

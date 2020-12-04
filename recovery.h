@@ -16,6 +16,8 @@
 
 #include <QMessageBox>
 
+#include <QProcess>
+
 class Recovery : public QWidget
 {
     Q_OBJECT
@@ -36,6 +38,10 @@ private:
     QPushButton *btnAbout;
     QPushButton *btnMain;
     QPushButton *btnKernel;
+    QPushButton *btnInstall;
+
+    QProcess *procInstall;
+    QProcess *procBackup;
 
     QTextEdit *textLog;
 
@@ -62,6 +68,8 @@ private slots:
 
     void showMain();
     void showKernel();
+
+    void onInstall();
 
 };
 

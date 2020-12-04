@@ -54,7 +54,7 @@ Recovery::Recovery(QWidget *parent) : QWidget(parent)
     textLog->setReadOnly(true);
 
     textLog->append("=====Recovery=====");
-    textLog->append("Модель: " + Name);
+    textLog->append("Название: " + Name);
     textLog->append("Текущая Версия: " + version);
     textLog->append("Папка загрузки: " + path);
 
@@ -126,7 +126,7 @@ void Recovery::onSearchResult(QNetworkReply *replyS)
     if (version.toInt() < newVersion.toInt())
     {
         textLog->clear();
-        textLog->append("Доступна новая версия ядра!!! " + newVersion);
+        textLog->append("Доступна новая версия recovery!!! " + newVersion);
         textLog->append("Размер: " + fullSize);
 
         btnDownload->setEnabled(true);
@@ -214,4 +214,25 @@ void Recovery::showKernel()
 {
     Kernel *boot = new Kernel;
     boot->show();
+}
+
+void Recovery::onInstall()
+{
+    textLog->append("Делаем резервную копию recovery");
+
+    procBackup->setProcessChannelMode(QProcess::SeparateChannels);
+    procBackup->start("su", QStringList() << "-c" << "busybox" << "dd" << "if=" << recovery << "of=" + path + "/recovery_" + version + ".img");
+
+    textLog->append(procBackup->readAll());
+
+    textLog->append("Готово! Бэкап лежит в " + path);
+
+    textLog->append("Прошиваем...");
+
+    procInstall->setProcessChannelMode(QProcess::SeparateChannels);
+    procInstall->start("su", QStringList() << "-c" << "busybox" << "dd" << "if=" << path + "/recovery.img" << "of=" + recovery);
+
+    textLog->append(procInstall->readAll());
+
+    textLog->append("Готово!");
 }
