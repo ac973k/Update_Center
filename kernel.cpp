@@ -1,5 +1,5 @@
-#include "updatecenter.h"
 #include "kernel.h"
+#include "updatecenter.h"
 #include "recovery.h"
 
 #include <QFile>
@@ -8,36 +8,16 @@
 #include <QtAndroidExtras/QtAndroid>
 #include <QtTest/QTest>
 
-bool requestAndroidPermissions(){
-//Request requiered permissions at runtime
 
-const QVector<QString> permissions({
-                                    "android.permission.WRITE_EXTERNAL_STORAGE",
-                                    "android.permission.READ_EXTERNAL_STORAGE,"
-                                    "android.permission.INTERNET"});
-
-for(const QString &permission : permissions){
-    auto result = QtAndroid::checkPermission(permission);
-    if(result == QtAndroid::PermissionResult::Denied){
-        auto resultHash = QtAndroid::requestPermissionsSync(QStringList({permission}));
-        if(resultHash[permission] == QtAndroid::PermissionResult::Denied)
-            return false;
-    }
-}
-
-return true;
-}
-
-UpdateCenter::UpdateCenter(QWidget *parent)
-    : QWidget(parent)
+Kernel::Kernel(QWidget *parent) : QWidget(parent)
 {
-    requestAndroidPermissions();
-
-    settingsFirmware = new QSettings("/system/version.ini", QSettings::IniFormat);
-    Model = settingsFirmware->value("General/Model").toString();
+    settingsFirmware = new QSettings("/system/kernel.ini", QSettings::IniFormat);
+    Name = settingsFirmware->value("General/Name").toString();
     version = settingsFirmware->value("General/Version").toString();
     url = settingsFirmware->value("General/URL").toString();
     path = settingsFirmware->value("General/Path").toString();
+    boot = settingsFirmware->value("General/Boot").toString();
+    backup = settingsFirmware->value("General/Backup").toString();
 
     QDir dir(path);
     if (!dir.exists())
@@ -52,7 +32,7 @@ UpdateCenter::UpdateCenter(QWidget *parent)
 
     btnSearch = new QPushButton("Проверить");
     btnDownload = new QPushButton("Загрузить");
-    btnKernel = new QPushButton("Ядро");
+    btnMain = new QPushButton("Главная");
     btnRecovery = new QPushButton("Recovery");
     btnAbout = new QPushButton("О Программе!");
 
@@ -65,7 +45,7 @@ UpdateCenter::UpdateCenter(QWidget *parent)
     mainLayout->addWidget(btnSearch, 0, 0, 1, 2);
     mainLayout->addWidget(btnDownload, 1, 0, 1, 2);
     mainLayout->addWidget(textLog, 2, 0, 1, 2);
-    mainLayout->addWidget(btnKernel, 3, 0, 1, 1);
+    mainLayout->addWidget(btnMain, 3, 0, 1, 1);
     mainLayout->addWidget(btnRecovery, 3, 1, 1, 1);
     mainLayout->addWidget(btnAbout, 4, 0, 1, 2);
 
@@ -73,18 +53,19 @@ UpdateCenter::UpdateCenter(QWidget *parent)
 
     textLog->setReadOnly(true);
 
-    textLog->append("Модель: " + Model);
+    textLog->append("=====Ядро=====");
+    textLog->append("Модель: " + Name);
     textLog->append("Текущая Версия: " + version);
     textLog->append("Папка загрузки: " + path);
 
     QObject::connect(btnSearch, SIGNAL(clicked()), this, SLOT(Search()));
     QObject::connect(btnDownload, SIGNAL(clicked()), this, SLOT(Download()));
-    QObject::connect(btnKernel, SIGNAL(clicked()), this, SLOT(showKernel()));
+    QObject::connect(btnMain, SIGNAL(clicked()), this, SLOT(showMain()));
     QObject::connect(btnRecovery, SIGNAL(clicked()), this, SLOT(showRecovery()));
     QObject::connect(btnAbout, SIGNAL(clicked()), this, SLOT(About()));
 }
 
-UpdateCenter::~UpdateCenter()
+Kernel::~Kernel()
 {
     delete settingsFirmware;
 
@@ -95,7 +76,7 @@ UpdateCenter::~UpdateCenter()
 
     delete btnSearch;
     delete btnDownload;
-    delete btnKernel;
+    delete btnMain;
     delete btnRecovery;
     delete btnAbout;
 
@@ -104,15 +85,15 @@ UpdateCenter::~UpdateCenter()
     delete boxAbout;
 }
 
-void UpdateCenter::Search()
+void Kernel::Search()
 {
-     QString site = url + "/update/" + version + "/version.ini";
+     QString site = url + "/update/kernel/" + version + "/version.ini";
 
      QObject::connect(managerSearch, SIGNAL(finished(QNetworkReply *)), this, SLOT(onSearchResult(QNetworkReply*))); //отправляем данные и получаем ответ успешно или ошибка
      managerSearch->get(QNetworkRequest(site));
 }
 
-void UpdateCenter::onSearchResult(QNetworkReply *replyS)
+void Kernel::onSearchResult(QNetworkReply *replyS)
 {
 
     QFile nFile(path + "/version.ini");
@@ -145,7 +126,7 @@ void UpdateCenter::onSearchResult(QNetworkReply *replyS)
     if (version.toInt() < newVersion.toInt())
     {
         textLog->clear();
-        textLog->append("Доступна новая версия!!! " + newVersion);
+        textLog->append("Доступна новая версия ядра!!! " + newVersion);
         textLog->append("Размер: " + fullSize);
 
         btnDownload->setEnabled(true);
@@ -157,7 +138,7 @@ void UpdateCenter::onSearchResult(QNetworkReply *replyS)
     }
 }
 
-void UpdateCenter::Download()
+void Kernel::Download()
 {
     QString newVersion;
 
@@ -167,7 +148,7 @@ void UpdateCenter::Download()
 
     newVersion = newSet.value("General/newVersion").toString();
 
-    QString site = url + "/update/" + newVersion + "/update.zip";
+    QString site = url + "/update/kernel/" + newVersion + "/boot.img";
 
     textLog->append("Начало Загрузки...");
 
@@ -177,9 +158,9 @@ void UpdateCenter::Download()
     QObject::connect(managerDownload, SIGNAL(finished(QNetworkReply *)), this, SLOT(onDownloadResult(QNetworkReply*))); //отправляем данные и получаем ответ успешно или ошибка
 }
 
-void UpdateCenter::onDownloadResult(QNetworkReply *replyD)
+void Kernel::onDownloadResult(QNetworkReply *replyD)
 {
-    QFile uFile(path + "/Update.zip");
+    QFile uFile(path + "/boot.img");
 
     if(!replyD->error())
     {
@@ -199,10 +180,10 @@ void UpdateCenter::onDownloadResult(QNetworkReply *replyD)
     replyD->deleteLater();
 
     textLog->append("Загрузка Завершена!");
-    textLog->append("Файл: " + path + "/Update.zip");
+    textLog->append("Файл: " + path + "/boot.img");
 }
 
-void UpdateCenter::About()
+void Kernel::About()
 {
     boxAbout->setTextFormat(Qt::RichText);
     boxAbout->setText("Update Manager"
@@ -217,19 +198,19 @@ void UpdateCenter::About()
     boxAbout->exec();
 }
 
-void UpdateCenter::onProgress(qint64 receivedSize, qint64 totalSize)
+void Kernel::onProgress(qint64 receivedSize, qint64 totalSize)
 {
     textLog->clear();
     textLog->append("Загружено: " + QString::number(receivedSize) + " / " + QString::number(totalSize));
 }
 
-void UpdateCenter::showKernel()
+void Kernel::showMain()
 {
-    Kernel *boot = new Kernel;
-    boot->show();
+    UpdateCenter *upd = new UpdateCenter;
+    upd->show();
 }
 
-void UpdateCenter::showRecovery()
+void Kernel::showRecovery()
 {
     Recovery *rec = new Recovery;
     rec->show();

@@ -1,5 +1,5 @@
-#ifndef UPDATECENTER_H
-#define UPDATECENTER_H
+#ifndef KERNEL_H
+#define KERNEL_H
 
 #include <QWidget>
 
@@ -16,15 +16,17 @@
 
 #include <QMessageBox>
 
-class UpdateCenter : public QWidget
+class Kernel : public QWidget
 {
     Q_OBJECT
 
 private:
-    QString Model;
+    QString Name;
     QString version;
     QString url;
     QString path;
+    QString boot;
+    QString backup;
     QString newVersion;
 
     QGridLayout *mainLayout;
@@ -32,7 +34,7 @@ private:
     QPushButton *btnSearch;
     QPushButton *btnDownload;
     QPushButton *btnAbout;
-    QPushButton *btnKernel;
+    QPushButton *btnMain;
     QPushButton *btnRecovery;
 
     QTextEdit *textLog;
@@ -45,8 +47,8 @@ private:
     QNetworkAccessManager *managerDownload;
 
 public:
-    UpdateCenter(QWidget *parent = nullptr);
-    ~UpdateCenter();
+    explicit Kernel(QWidget *parent = nullptr);
+    ~Kernel();
 
 private slots:
     void Search();
@@ -58,7 +60,9 @@ private slots:
 
     void onProgress(qint64 receivedSize, qint64 totalSize);
 
-    void showKernel();
+    void showMain();
     void showRecovery();
+
 };
-#endif // UPDATECENTER_H
+
+#endif // KERNEL_H

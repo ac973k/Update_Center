@@ -1,5 +1,5 @@
-#ifndef UPDATECENTER_H
-#define UPDATECENTER_H
+#ifndef RECOVERY_H
+#define RECOVERY_H
 
 #include <QWidget>
 
@@ -16,15 +16,17 @@
 
 #include <QMessageBox>
 
-class UpdateCenter : public QWidget
+class Recovery : public QWidget
 {
     Q_OBJECT
 
 private:
-    QString Model;
+    QString Name;
     QString version;
     QString url;
     QString path;
+    QString recovery;
+    QString backup;
     QString newVersion;
 
     QGridLayout *mainLayout;
@@ -32,8 +34,8 @@ private:
     QPushButton *btnSearch;
     QPushButton *btnDownload;
     QPushButton *btnAbout;
+    QPushButton *btnMain;
     QPushButton *btnKernel;
-    QPushButton *btnRecovery;
 
     QTextEdit *textLog;
 
@@ -45,8 +47,8 @@ private:
     QNetworkAccessManager *managerDownload;
 
 public:
-    UpdateCenter(QWidget *parent = nullptr);
-    ~UpdateCenter();
+    explicit Recovery(QWidget *parent = nullptr);
+    ~Recovery();
 
 private slots:
     void Search();
@@ -58,7 +60,9 @@ private slots:
 
     void onProgress(qint64 receivedSize, qint64 totalSize);
 
+    void showMain();
     void showKernel();
-    void showRecovery();
+
 };
-#endif // UPDATECENTER_H
+
+#endif // RECOVERY_H

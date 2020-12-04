@@ -9,10 +9,14 @@ CONFIG += c++11
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    kernel.cpp \
     main.cpp \
+    recovery.cpp \
     updatecenter.cpp
 
 HEADERS += \
+    kernel.h \
+    recovery.h \
     updatecenter.h
 
 # Default rules for deployment.
