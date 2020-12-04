@@ -234,5 +234,11 @@ void Kernel::onInstall()
 
     textLog->append(procInstall->readAll());
 
+    QSettings newSet(path + "/version.ini", QSettings::IniFormat);
+    newVersion = newSet.value("General/newVersion").toString();
+    settingsFirmware->setValue("General/Version", newVersion);
+    settingsFirmware->sync();
+
+    textLog->append("Текущая версия ядра: " + version);
     textLog->append("Готово!");
 }
