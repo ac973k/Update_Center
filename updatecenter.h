@@ -25,6 +25,7 @@ private:
     QString version;
     QString url;
     QString path;
+    QString newVersion;
 
     QGridLayout *mainLayout;
 

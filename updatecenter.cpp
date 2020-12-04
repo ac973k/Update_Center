@@ -130,7 +130,7 @@ void UpdateCenter::onSearchResult(QNetworkReply *replyS)
     QSettings newSet(path + "/version.ini", QSettings::IniFormat);
     fullSize = newSet.value("General/Size").toString();
 
-    newVersion = newSet.value("General/Version").toString();
+    newVersion = newSet.value("General/newVersion").toString();
 
     if (version.toInt() < newVersion.toInt())
     {
@@ -155,7 +155,7 @@ void UpdateCenter::Download()
 
     QSettings newSet(path + "/version.ini", QSettings::IniFormat);
 
-    newVersion = newSet.value("General/Version").toString();
+    newVersion = newSet.value("General/newVersion").toString();
 
     QString site = url + "/update/" + newVersion + "/update.zip";
 
