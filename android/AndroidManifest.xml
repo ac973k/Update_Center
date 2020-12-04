@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<manifest package="com.update.center" xmlns:android="http://schemas.android.com/apk/res/android" android:versionName="20201202" android:versionCode="-- %%INSERT_VERSION_CODE%% --" android:installLocation="auto">
+<manifest package="com.update.center" xmlns:android="http://schemas.android.com/apk/res/android" android:versionName="20201204" android:versionCode="-- %%INSERT_VERSION_CODE%% --" android:installLocation="auto">
     <!-- The following comment will be replaced upon deployment with default permissions based on the dependencies of the application.
          Remove the comment if you do not require these default permissions. -->
 
