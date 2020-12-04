@@ -223,16 +223,29 @@ void Kernel::onInstall()
     procBackup->setProcessChannelMode(QProcess::SeparateChannels);
     procBackup->start("su", QStringList() << "-c" << "busybox" << "dd" << "if=" << boot << "of=" + path + "/boot_" + version + ".img");
 
-    textLog->append(procBackup->readAll());
-
-    textLog->append("Готово! Бэкап лежит в " + path);
+    if(!procBackup->waitForFinished())
+    {
+        textLog->append(procBackup->errorString());
+    }
+    else
+    {
+        textLog->append(procBackup->readAll());
+        textLog->append("Готово! Бэкап лежит в " + path);
+    }
 
     textLog->append("Прошиваем...");
 
     procInstall->setProcessChannelMode(QProcess::SeparateChannels);
     procInstall->start("su", QStringList() << "-c" << "busybox" << "dd" << "if=" << path + "/boot.img" << "of=" + boot);
 
-    textLog->append(procInstall->readAll());
+    if(!procBackup->waitForFinished())
+    {
+        textLog->append(procBackup->errorString());
+    }
+    else
+    {
+        textLog->append(procBackup->readAll());
+    }
 
     QSettings newSet(path + "/version.ini", QSettings::IniFormat);
     newVersion = newSet.value("General/newVersion").toString();
