@@ -2,6 +2,7 @@
 
 #include "kernel.h"
 #include "updatecenter.h"
+#include "aboutapp.h"
 
 #include <QFile>
 #include <QDir>
@@ -35,8 +36,6 @@ Recovery::Recovery(QWidget *parent) : QWidget(parent)
     btnMain = new QPushButton("Главная");
     btnKernel = new QPushButton("Ядро");
     btnAbout = new QPushButton("О Программе!");
-
-    boxAbout = new QMessageBox;
 
     textLog = new QTextEdit;
 
@@ -81,8 +80,6 @@ Recovery::~Recovery()
     delete btnAbout;
 
     delete textLog;
-
-    delete boxAbout;
 }
 
 void Recovery::Search()
@@ -185,17 +182,9 @@ void Recovery::onDownloadResult(QNetworkReply *replyD)
 
 void Recovery::About()
 {
-    boxAbout->setTextFormat(Qt::RichText);
-    boxAbout->setText("Update Manager"
+    AboutApp *about = new AboutApp;
 
-    "\n Разработано с помощью QT Framework."
-    ""
-    "\n Links:"
-    "\n https://qt.io"
-    "\nРазработчик: Danilka Terentyev(4pda: AC97; GitHub: ac973k)"
-    "");
-
-    boxAbout->exec();
+    about->show();
 }
 
 void Recovery::onProgress(qint64 receivedSize, qint64 totalSize)

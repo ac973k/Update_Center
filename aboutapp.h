@@ -1,37 +1,36 @@
-#ifndef UPDATECENTER_H
-#define UPDATECENTER_H
+#ifndef ABOUTAPP_H
+#define ABOUTAPP_H
 
 #include <QWidget>
 
 #include <QGridLayout>
+
+#include <QPushButton>
+#include <QTextEdit>
+#include <QProgressBar>
 
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 
 #include <QSettings>
 
-#include <QPushButton>
-
-#include <QTextEdit>
-
-class UpdateCenter : public QWidget
+class AboutApp : public QWidget
 {
     Q_OBJECT
 
 private:
-    QString Model;
     QString version;
-    QString url;
-    QString path;
     QString newVersion;
+    QString url;
+    QString urlApp;
+    QString path;
 
     QGridLayout *mainLayout;
 
     QPushButton *btnSearch;
     QPushButton *btnDownload;
-    QPushButton *btnAbout;
-    QPushButton *btnKernel;
-    QPushButton *btnRecovery;
+
+    QProgressBar *pBar;
 
     QTextEdit *textLog;
 
@@ -41,20 +40,18 @@ private:
     QNetworkAccessManager *managerDownload;
 
 public:
-    UpdateCenter(QWidget *parent = nullptr);
-    ~UpdateCenter();
+    explicit AboutApp(QWidget *parent = nullptr);
+    ~AboutApp();
 
 private slots:
     void Search();
     void Download();
-    void About();
 
     void onSearchResult(QNetworkReply *replyS);
     void onDownloadResult(QNetworkReply *replyD);
 
     void onProgress(qint64 receivedSize, qint64 totalSize);
 
-    void showKernel();
-    void showRecovery();
 };
-#endif // UPDATECENTER_H
+
+#endif // ABOUTAPP_H

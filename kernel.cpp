@@ -1,6 +1,7 @@
 #include "kernel.h"
 #include "updatecenter.h"
 #include "recovery.h"
+#include "aboutapp.h"
 
 #include <QFile>
 #include <QDir>
@@ -35,8 +36,6 @@ Kernel::Kernel(QWidget *parent) : QWidget(parent)
     btnMain = new QPushButton("Главная");
     btnRecovery = new QPushButton("Recovery");
     btnAbout = new QPushButton("О Программе!");
-
-    boxAbout = new QMessageBox;
 
     textLog = new QTextEdit;
 
@@ -81,8 +80,6 @@ Kernel::~Kernel()
     delete btnAbout;
 
     delete textLog;
-
-    delete boxAbout;
 }
 
 void Kernel::Search()
@@ -185,17 +182,9 @@ void Kernel::onDownloadResult(QNetworkReply *replyD)
 
 void Kernel::About()
 {
-    boxAbout->setTextFormat(Qt::RichText);
-    boxAbout->setText("Update Manager"
+    AboutApp *about = new AboutApp;
 
-    "\n Разработано с помощью QT Framework."
-    ""
-    "\n Links:"
-    "\n https://qt.io"
-    "\nРазработчик: Danilka Terentyev(4pda: AC97; GitHub: ac973k)"
-    "");
-
-    boxAbout->exec();
+    about->show();
 }
 
 void Kernel::onProgress(qint64 receivedSize, qint64 totalSize)

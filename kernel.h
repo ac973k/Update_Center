@@ -14,8 +14,6 @@
 
 #include <QTextEdit>
 
-#include <QMessageBox>
-
 #include <QProcess>
 
 class Kernel : public QWidget
@@ -44,8 +42,6 @@ private:
     QProcess *procBackup;
 
     QTextEdit *textLog;
-
-    QMessageBox *boxAbout;
 
     QSettings *settingsFirmware;
 
