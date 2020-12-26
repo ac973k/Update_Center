@@ -1,10 +1,10 @@
 #include "kernel.h"
 #include "updatecenter.h"
 #include "recovery.h"
-#include "aboutapp.h"
 
 #include <QFile>
 #include <QDir>
+#include <QMessageBox>
 
 #include <QtAndroidExtras/QtAndroid>
 #include <QtTest/QTest>
@@ -33,6 +33,7 @@ Kernel::Kernel(QWidget *parent) : QWidget(parent)
 
     btnSearch = new QPushButton("Проверить");
     btnDownload = new QPushButton("Загрузить");
+    btnInstall = new QPushButton("Установить");
     btnMain = new QPushButton("Главная");
     btnRecovery = new QPushButton("Recovery");
     btnAbout = new QPushButton("О Программе!");
@@ -40,13 +41,15 @@ Kernel::Kernel(QWidget *parent) : QWidget(parent)
     textLog = new QTextEdit;
 
     btnDownload->setEnabled(false);
+    btnInstall->setEnabled(false);
 
     mainLayout->addWidget(btnSearch, 0, 0, 1, 2);
     mainLayout->addWidget(btnDownload, 1, 0, 1, 2);
-    mainLayout->addWidget(textLog, 2, 0, 1, 2);
-    mainLayout->addWidget(btnMain, 3, 0, 1, 1);
-    mainLayout->addWidget(btnRecovery, 3, 1, 1, 1);
-    mainLayout->addWidget(btnAbout, 4, 0, 1, 2);
+    mainLayout->addWidget(btnInstall, 2, 0, 1, 2);
+    mainLayout->addWidget(textLog, 3, 0, 1, 2);
+    mainLayout->addWidget(btnMain, 4, 0, 1, 1);
+    mainLayout->addWidget(btnRecovery, 4, 1, 1, 1);
+    mainLayout->addWidget(btnAbout, 5, 0, 1, 2);
 
     setLayout(mainLayout);
 
@@ -59,6 +62,7 @@ Kernel::Kernel(QWidget *parent) : QWidget(parent)
 
     QObject::connect(btnSearch, SIGNAL(clicked()), this, SLOT(Search()));
     QObject::connect(btnDownload, SIGNAL(clicked()), this, SLOT(Download()));
+    QObject::connect(btnInstall, SIGNAL(clicked()), this, SLOT(onInstall()));
     QObject::connect(btnMain, SIGNAL(clicked()), this, SLOT(showMain()));
     QObject::connect(btnRecovery, SIGNAL(clicked()), this, SLOT(showRecovery()));
     QObject::connect(btnAbout, SIGNAL(clicked()), this, SLOT(About()));
@@ -178,13 +182,17 @@ void Kernel::onDownloadResult(QNetworkReply *replyD)
 
     textLog->append("Загрузка Завершена!");
     textLog->append("Файл: " + path + "/boot.img");
+
+    btnInstall->setEnabled(true);
 }
 
 void Kernel::About()
 {
-    AboutApp *about = new AboutApp;
+    QMessageBox *boxAbout = new QMessageBox();
 
-    about->show();
+    boxAbout->setText("Text");
+
+    boxAbout->show();
 }
 
 void Kernel::onProgress(qint64 receivedSize, qint64 totalSize)
@@ -236,10 +244,10 @@ void Kernel::onInstall()
         textLog->append(procBackup->readAll());
     }
 
-    QSettings newSet(path + "/version.ini", QSettings::IniFormat);
+    /*QSettings newSet(path + "/version.ini", QSettings::IniFormat);
     newVersion = newSet.value("General/newVersion").toString();
     settingsFirmware->setValue("General/Version", newVersion);
-    settingsFirmware->sync();
+    settingsFirmware->sync();*/
 
     textLog->append("Текущая версия ядра: " + version);
     textLog->append("Готово!");

@@ -2,10 +2,10 @@
 #include "kernel.h"
 #include "recovery.h"
 
-#include "aboutapp.h"
-
 #include <QFile>
 #include <QDir>
+
+#include <QMessageBox>
 
 #include <QtAndroidExtras/QtAndroid>
 #include <QtTest/QTest>
@@ -202,9 +202,11 @@ void UpdateCenter::onDownloadResult(QNetworkReply *replyD)
 
 void UpdateCenter::About()
 {
-    AboutApp *about = new AboutApp;
+    QMessageBox *boxAbout = new QMessageBox();
 
-    about->show();
+    boxAbout->setText("Text");
+
+    boxAbout->show();
 }
 
 void UpdateCenter::onProgress(qint64 receivedSize, qint64 totalSize)
