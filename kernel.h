@@ -66,8 +66,6 @@ private slots:
     void showMain();
     void showRecovery();
 
-    void onInstall();
-
 };
 
 #endif // KERNEL_H

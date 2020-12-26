@@ -38,7 +38,6 @@ Recovery::Recovery(QWidget *parent) : QWidget(parent)
 
     btnSearch = new QPushButton("Проверить");
     btnDownload = new QPushButton("Загрузить");
-    btnInstall = new QPushButton("Установить");
     btnMain = new QPushButton("Главная");
     btnKernel = new QPushButton("Ядро");
     btnAbout = new QPushButton("О Программе!");
@@ -46,15 +45,13 @@ Recovery::Recovery(QWidget *parent) : QWidget(parent)
     textLog = new QTextEdit;
 
     btnDownload->setEnabled(false);
-    //btnInstall->setEnabled(false);
 
     mainLayout->addWidget(btnSearch, 0, 0, 1, 2);
     mainLayout->addWidget(btnDownload, 1, 0, 1, 2);
-    mainLayout->addWidget(btnInstall, 2, 0, 1, 2);
-    mainLayout->addWidget(textLog, 3, 0, 1, 2);
-    mainLayout->addWidget(btnMain, 4, 0, 1, 1);
-    mainLayout->addWidget(btnKernel, 4, 1, 1, 1);
-    mainLayout->addWidget(btnAbout, 5, 0, 1, 2);
+    mainLayout->addWidget(textLog, 2, 0, 1, 2);
+    mainLayout->addWidget(btnMain, 3, 0, 1, 1);
+    mainLayout->addWidget(btnKernel, 3, 1, 1, 1);
+    mainLayout->addWidget(btnAbout, 4, 0, 1, 2);
 
     setLayout(mainLayout);
 
@@ -67,7 +64,6 @@ Recovery::Recovery(QWidget *parent) : QWidget(parent)
 
     QObject::connect(btnSearch, SIGNAL(clicked()), this, SLOT(Search()));
     QObject::connect(btnDownload, SIGNAL(clicked()), this, SLOT(Download()));
-    QObject::connect(btnInstall, SIGNAL(clicked()), this, SLOT(onInstall()));
     QObject::connect(btnMain, SIGNAL(clicked()), this, SLOT(showMain()));
     QObject::connect(btnKernel, SIGNAL(clicked()), this, SLOT(showKernel()));
     QObject::connect(btnAbout, SIGNAL(clicked()), this, SLOT(About()));
@@ -188,7 +184,71 @@ void Recovery::onDownloadResult(QNetworkReply *replyD)
     textLog->append("Загрузка Завершена!");
     textLog->append("Файл: " + path + "/recovery.img");
 
-    btnInstall->setEnabled(true);
+    QMessageBox *boxInstall = new QMessageBox;
+    boxInstall->setText("Установить?");
+    btnInstall = boxInstall->addButton("Да", QMessageBox::ActionRole);
+    btnCancel = boxInstall->addButton("Нет", QMessageBox::ActionRole);
+    boxInstall->exec();
+
+    if (boxInstall->clickedButton() == btnInstall)
+    {
+        textLog->append("Делаем резервную копию recovery");
+
+        QString command = "busybox dd if=" + recovery + " of=" + backup + "/recovery_" + version + ".img";
+
+        procBackup = new QProcess;
+        procBackup->setProcessChannelMode(QProcess::SeparateChannels);
+        procBackup->start("su", QStringList() << "-c" << command);
+
+
+        if(!procBackup->waitForFinished())
+        {
+            textLog->append(procBackup->errorString());
+        }
+        else
+        {
+            textLog->append(procBackup->readAll());
+            textLog->append("Готово! Бэкап лежит в " + backup);
+        }
+
+        delete procBackup;
+
+        textLog->append("Прошиваем...");
+
+        QString commandI = "busybox dd if=" + path + "/recovery.img of=" + recovery;
+        textLog->append(commandI);
+
+        procInstall = new QProcess;
+        procInstall->setProcessChannelMode(QProcess::SeparateChannels);
+        procInstall->start("su", QStringList() << "-c" << commandI);
+
+        if(!procInstall->waitForFinished())
+        {
+            textLog->append(procInstall->errorString());
+        }
+        else
+        {
+            textLog->append(procInstall->readAll());
+        }
+
+        delete procInstall;
+
+        textLog->append("Текущая версия recovery: " + version);
+
+        system("su -c cp /system/recovery.ini /sdcard/recovery.ini");
+        QSettings updSet("/sdcard/recovery.ini", QSettings::IniFormat);
+        QSettings newSet(path + "/version.ini", QSettings::IniFormat);
+        newVersion = newSet.value("General/newVersion").toString();
+        updSet.setValue("General/Version", newVersion);
+        updSet.sync();
+
+        system("su -c busybox mount -o remount,rw /system");
+        system("su -c cp /sdcard/recovery.ini /system/recovery.ini");
+        system("su -c busybox chmod 644 /system/recovery.ini");
+
+        textLog->append("Новая версия recovery: " + newVersion);
+        textLog->append("Готово!");
+    }
 }
 
 void Recovery::About()
@@ -216,64 +276,4 @@ void Recovery::showKernel()
 {
     Kernel *boot = new Kernel;
     boot->show();
-}
-
-void Recovery::onInstall()
-{
-    textLog->append("Делаем резервную копию recovery");
-
-    QString command = "busybox dd if=" + recovery + " of=" + backup + "/recovery_" + version + ".img";
-
-    procBackup = new QProcess;
-    procBackup->setProcessChannelMode(QProcess::SeparateChannels);
-    procBackup->start("su", QStringList() << "-c" << command);
-
-
-    if(!procBackup->waitForFinished())
-    {
-        textLog->append(procBackup->errorString());
-    }
-    else
-    {
-        textLog->append(procBackup->readAll());
-        textLog->append("Готово! Бэкап лежит в " + backup);
-    }
-
-    delete procBackup;
-
-    textLog->append("Прошиваем...");
-
-    QString commandI = "busybox dd if=" + path + "/recovery.img of=" + recovery;
-    textLog->append(commandI);
-
-    procInstall = new QProcess;
-    procInstall->setProcessChannelMode(QProcess::SeparateChannels);
-    procInstall->start("su", QStringList() << "-c" << commandI);
-
-    if(!procInstall->waitForFinished())
-    {
-        textLog->append(procInstall->errorString());
-    }
-    else
-    {
-        textLog->append(procInstall->readAll());
-    }
-
-    delete procInstall;
-
-    textLog->append("Текущая версия recovery: " + version);
-
-    system("su -c cp /system/recovery.ini /sdcard/recovery.ini");
-    QSettings updSet("/sdcard/recovery.ini", QSettings::IniFormat);
-    QSettings newSet(path + "/version.ini", QSettings::IniFormat);
-    newVersion = newSet.value("General/newVersion").toString();
-    updSet.setValue("General/Version", newVersion);
-    updSet.sync();
-
-    system("su -c busybox mount -o remount,rw /system");
-    system("su -c cp /sdcard/recovery.ini /system/recovery.ini");
-    system("su -c busybox chmod 644 /system/recovery.ini");
-
-    textLog->append("Новая версия recovery: " + newVersion);
-    textLog->append("Готово!");
 }

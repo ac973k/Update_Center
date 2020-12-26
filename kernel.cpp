@@ -45,7 +45,6 @@ Kernel::Kernel(QWidget *parent) : QWidget(parent)
     textLog = new QTextEdit;
 
     btnDownload->setEnabled(false);
-    btnInstall->setEnabled(false);
 
     mainLayout->addWidget(btnSearch, 0, 0, 1, 2);
     mainLayout->addWidget(btnDownload, 1, 0, 1, 2);
@@ -188,6 +187,7 @@ void Kernel::onDownloadResult(QNetworkReply *replyD)
     QMessageBox *boxInstall = new QMessageBox;
     boxInstall->setText("Установить?");
     btnInstall = boxInstall->addButton("Да", QMessageBox::ActionRole);
+    btnCancel = boxInstall->addButton("Нет", QMessageBox::ActionRole);
     boxInstall->exec();
 
     if (boxInstall->clickedButton() == btnInstall)

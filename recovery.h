@@ -37,6 +37,7 @@ private:
     QPushButton *btnMain;
     QPushButton *btnKernel;
     QPushButton *btnInstall;
+    QPushButton *btnCancel;
 
     QProcess *procInstall;
     QProcess *procBackup;
@@ -64,8 +65,6 @@ private slots:
 
     void showMain();
     void showKernel();
-
-    void onInstall();
 
 };
 
