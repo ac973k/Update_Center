@@ -21,9 +21,14 @@ Kernel::Kernel(QWidget *parent) : QWidget(parent)
     backup = settingsFirmware->value("General/Backup").toString();
 
     QDir dir(path);
+    QDir dirBkp(backup);
     if (!dir.exists())
     {
         dir.mkdir(path);
+    }
+    else if (!dirBkp.exists())
+    {
+        dirBkp.mkdir(backup);
     }
 
     managerSearch = new QNetworkAccessManager();
@@ -33,7 +38,6 @@ Kernel::Kernel(QWidget *parent) : QWidget(parent)
 
     btnSearch = new QPushButton("Проверить");
     btnDownload = new QPushButton("Загрузить");
-    btnInstall = new QPushButton("Установить");
     btnMain = new QPushButton("Главная");
     btnRecovery = new QPushButton("Recovery");
     btnAbout = new QPushButton("О Программе!");
@@ -45,11 +49,10 @@ Kernel::Kernel(QWidget *parent) : QWidget(parent)
 
     mainLayout->addWidget(btnSearch, 0, 0, 1, 2);
     mainLayout->addWidget(btnDownload, 1, 0, 1, 2);
-    mainLayout->addWidget(btnInstall, 2, 0, 1, 2);
-    mainLayout->addWidget(textLog, 3, 0, 1, 2);
-    mainLayout->addWidget(btnMain, 4, 0, 1, 1);
-    mainLayout->addWidget(btnRecovery, 4, 1, 1, 1);
-    mainLayout->addWidget(btnAbout, 5, 0, 1, 2);
+    mainLayout->addWidget(textLog, 2, 0, 1, 2);
+    mainLayout->addWidget(btnMain, 3, 0, 1, 1);
+    mainLayout->addWidget(btnRecovery, 3, 1, 1, 1);
+    mainLayout->addWidget(btnAbout, 4, 0, 1, 2);
 
     setLayout(mainLayout);
 
@@ -62,7 +65,6 @@ Kernel::Kernel(QWidget *parent) : QWidget(parent)
 
     QObject::connect(btnSearch, SIGNAL(clicked()), this, SLOT(Search()));
     QObject::connect(btnDownload, SIGNAL(clicked()), this, SLOT(Download()));
-    QObject::connect(btnInstall, SIGNAL(clicked()), this, SLOT(onInstall()));
     QObject::connect(btnMain, SIGNAL(clicked()), this, SLOT(showMain()));
     QObject::connect(btnRecovery, SIGNAL(clicked()), this, SLOT(showRecovery()));
     QObject::connect(btnAbout, SIGNAL(clicked()), this, SLOT(About()));
@@ -183,7 +185,75 @@ void Kernel::onDownloadResult(QNetworkReply *replyD)
     textLog->append("Загрузка Завершена!");
     textLog->append("Файл: " + path + "/boot.img");
 
-    btnInstall->setEnabled(true);
+    QMessageBox *boxInstall = new QMessageBox;
+    boxInstall->setText("Установить?");
+    btnInstall = boxInstall->addButton("Да", QMessageBox::ActionRole);
+    boxInstall->exec();
+
+    if (boxInstall->clickedButton() == btnInstall)
+    {
+        textLog->append("Делаем резервную копию recovery");
+
+        QString command = "busybox dd if=" + boot + " of=" + backup + "/boot_" + version + ".img";
+
+        procBackup = new QProcess;
+        procBackup->setProcessChannelMode(QProcess::SeparateChannels);
+        procBackup->start("su", QStringList() << "-c" << command);
+
+
+        if(!procBackup->waitForFinished())
+        {
+            textLog->append(procBackup->errorString());
+        }
+        else
+        {
+            textLog->append(procBackup->readAll());
+            textLog->append("Готово! Бэкап лежит в " + backup);
+        }
+
+        delete procBackup;
+
+        textLog->append("Прошиваем...");
+
+        QString commandI = "busybox dd if=" + path + "/boot.img of=" + boot;
+        textLog->append(commandI);
+
+        procInstall = new QProcess;
+        procInstall->setProcessChannelMode(QProcess::SeparateChannels);
+        procInstall->start("su", QStringList() << "-c" << commandI);
+
+        if(!procInstall->waitForFinished())
+        {
+            textLog->append(procInstall->errorString());
+        }
+        else
+        {
+            textLog->append(procInstall->readAll());
+        }
+
+        delete procInstall;
+
+        textLog->append("Текущая версия recovery: " + version);
+
+        system("su -c cp /system/kernel.ini /sdcard/kernel.ini");
+        QSettings updSet("/sdcard/kernel.ini", QSettings::IniFormat);
+        QSettings newSet(path + "/version.ini", QSettings::IniFormat);
+        newVersion = newSet.value("General/newVersion").toString();
+        updSet.setValue("General/Version", newVersion);
+        updSet.sync();
+
+        system("su -c busybox mount -o remount,rw /system");
+        system("su -c cp /sdcard/kernel.ini /system/kernel.ini");
+        system("su -c busybox chmod 644 /system/kernel.ini");
+
+        textLog->append("Новая версия kernel: " + newVersion);
+        textLog->append("Готово!");
+    }
+    else if (boxInstall->clickedButton() == btnCancel)
+    {
+        textLog->append("Готово!");
+    }
+
 }
 
 void Kernel::About()
@@ -211,44 +281,4 @@ void Kernel::showRecovery()
 {
     Recovery *rec = new Recovery;
     rec->show();
-}
-
-void Kernel::onInstall()
-{
-    textLog->append("Делаем резервную копию ядра");
-
-    procBackup->setProcessChannelMode(QProcess::SeparateChannels);
-    procBackup->start("su", QStringList() << "-c" << "busybox" << "dd" << "if=" << boot << "of=" + path + "/boot_" + version + ".img");
-
-    if(!procBackup->waitForFinished())
-    {
-        textLog->append(procBackup->errorString());
-    }
-    else
-    {
-        textLog->append(procBackup->readAll());
-        textLog->append("Готово! Бэкап лежит в " + path);
-    }
-
-    textLog->append("Прошиваем...");
-
-    procInstall->setProcessChannelMode(QProcess::SeparateChannels);
-    procInstall->start("su", QStringList() << "-c" << "busybox" << "dd" << "if=" << path + "/boot.img" << "of=" + boot);
-
-    if(!procBackup->waitForFinished())
-    {
-        textLog->append(procBackup->errorString());
-    }
-    else
-    {
-        textLog->append(procBackup->readAll());
-    }
-
-    /*QSettings newSet(path + "/version.ini", QSettings::IniFormat);
-    newVersion = newSet.value("General/newVersion").toString();
-    settingsFirmware->setValue("General/Version", newVersion);
-    settingsFirmware->sync();*/
-
-    textLog->append("Текущая версия ядра: " + version);
-    textLog->append("Готово!");
 }

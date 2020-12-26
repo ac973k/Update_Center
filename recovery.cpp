@@ -21,9 +21,14 @@ Recovery::Recovery(QWidget *parent) : QWidget(parent)
     backup = settingsFirmware->value("General/Backup").toString();
 
     QDir dir(path);
+    QDir dirBkp(backup);
     if (!dir.exists())
     {
         dir.mkdir(path);
+    }
+    else if (!dirBkp.exists())
+    {
+        dirBkp.mkdir(backup);
     }
 
     managerSearch = new QNetworkAccessManager();
@@ -41,7 +46,7 @@ Recovery::Recovery(QWidget *parent) : QWidget(parent)
     textLog = new QTextEdit;
 
     btnDownload->setEnabled(false);
-    btnInstall->setEnabled(false);
+    //btnInstall->setEnabled(false);
 
     mainLayout->addWidget(btnSearch, 0, 0, 1, 2);
     mainLayout->addWidget(btnDownload, 1, 0, 1, 2);
@@ -161,7 +166,7 @@ void Recovery::Download()
 
 void Recovery::onDownloadResult(QNetworkReply *replyD)
 {
-    QFile uFile(path + "/recovery.img");
+    QFile uFile(path + "/recovery.zip");
 
     if(!replyD->error())
     {
@@ -217,8 +222,12 @@ void Recovery::onInstall()
 {
     textLog->append("Делаем резервную копию recovery");
 
+    QString command = "busybox dd if=" + recovery + " of=" + backup + "/recovery_" + version + ".img";
+
+    procBackup = new QProcess;
     procBackup->setProcessChannelMode(QProcess::SeparateChannels);
-    procBackup->start("su", QStringList() << "-c" << "busybox" << "dd" << "if=" << recovery << "of=" + path + "/recovery_" + version + ".img");
+    procBackup->start("su", QStringList() << "-c" << command);
+
 
     if(!procBackup->waitForFinished())
     {
@@ -227,29 +236,44 @@ void Recovery::onInstall()
     else
     {
         textLog->append(procBackup->readAll());
-        textLog->append("Готово! Бэкап лежит в " + path);
+        textLog->append("Готово! Бэкап лежит в " + backup);
     }
+
+    delete procBackup;
 
     textLog->append("Прошиваем...");
 
-    procInstall->setProcessChannelMode(QProcess::SeparateChannels);
-    procInstall->start("su", QStringList() << "-c" << "busybox" << "dd" << "if=" << path + "/recovery.img" << "of=" + recovery);
+    QString commandI = "busybox dd if=" + path + "/recovery.img of=" + recovery;
+    textLog->append(commandI);
 
-    if(!procBackup->waitForFinished())
+    procInstall = new QProcess;
+    procInstall->setProcessChannelMode(QProcess::SeparateChannels);
+    procInstall->start("su", QStringList() << "-c" << commandI);
+
+    if(!procInstall->waitForFinished())
     {
-        textLog->append(procBackup->errorString());
+        textLog->append(procInstall->errorString());
     }
     else
     {
-        textLog->append(procBackup->readAll());
+        textLog->append(procInstall->readAll());
     }
 
-    /*QSettings newSet(path + "/version.ini", QSettings::IniFormat);
-    newVersion = newSet.value("General/newVersion").toString();
-    settingsFirmware->setValue("General/Version", newVersion);
-    settingsFirmware->sync();*/
+    delete procInstall;
 
     textLog->append("Текущая версия recovery: " + version);
 
+    system("su -c cp /system/recovery.ini /sdcard/recovery.ini");
+    QSettings updSet("/sdcard/recovery.ini", QSettings::IniFormat);
+    QSettings newSet(path + "/version.ini", QSettings::IniFormat);
+    newVersion = newSet.value("General/newVersion").toString();
+    updSet.setValue("General/Version", newVersion);
+    updSet.sync();
+
+    system("su -c busybox mount -o remount,rw /system");
+    system("su -c cp /sdcard/recovery.ini /system/recovery.ini");
+    system("su -c busybox chmod 644 /system/recovery.ini");
+
+    textLog->append("Новая версия recovery: " + newVersion);
     textLog->append("Готово!");
 }

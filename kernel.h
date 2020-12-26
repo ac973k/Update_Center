@@ -37,6 +37,7 @@ private:
     QPushButton *btnMain;
     QPushButton *btnRecovery;
     QPushButton *btnInstall;
+    QPushButton *btnCancel;
 
     QProcess *procInstall;
     QProcess *procBackup;
