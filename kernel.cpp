@@ -260,9 +260,17 @@ void Kernel::About()
 {
     QMessageBox *boxAbout = new QMessageBox();
 
-    boxAbout->setText("Text");
+    boxAbout->setTextFormat(Qt::RichText);
+    boxAbout->setText("Update Manager"
 
-    boxAbout->show();
+        "\n Разработано с помощью QT Framework."
+        ""
+        "\n Links:"
+        "\n https://qt.io"
+        "\nРазработчик: Danilka Terentyev(4pda: AC97; GitHub: ac973k)"
+        "");
+
+    boxAbout->exec();
 }
 
 void Kernel::onProgress(qint64 receivedSize, qint64 totalSize)
